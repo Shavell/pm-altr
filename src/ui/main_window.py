@@ -3,17 +3,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QAction, QClipboard, QCloseEvent
+from PyQt6.QtGui import QAction, QCloseEvent
 from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QSplitter,
-    QVBoxLayout, QHBoxLayout, QDockWidget, QInputDialog,
-    QMessageBox, QApplication, QMenuBar, QPushButton,
+    QVBoxLayout, QDockWidget, QInputDialog,
+    QMessageBox, QApplication,
 )
 
 from src.core.http_client import HttpClient, RequestConfig, ResponseData
 from src.core.curl_parser import parse_curl, export_curl, CurlRequest
 from src.core.history_manager import HistoryManager, HistoryEntry
-from src.core.settings_store import load_settings, save_settings, proxy_url
+from src.core.settings_store import load_settings
 from src.ui.request_panel import RequestPanel
 from src.ui.response_panel import ResponsePanel
 from src.ui.network_debug_panel import NetworkDebugPanel
@@ -178,8 +178,10 @@ class MainWindow(QMainWindow):
         history_dock = QDockWidget("History", self)
         history_dock.setWidget(self._history_panel)
         history_dock.setMinimumWidth(280)
-        history_dock.setFeatures(QDockWidget.DockWidgetFeature.DockWidgetMovable |
-                                  QDockWidget.DockWidgetFeature.DockWidgetFloatable)
+        history_dock.setFeatures(
+            QDockWidget.DockWidgetFeature.DockWidgetMovable
+            | QDockWidget.DockWidgetFeature.DockWidgetFloatable
+        )
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, history_dock)
         self._history_dock = history_dock
 

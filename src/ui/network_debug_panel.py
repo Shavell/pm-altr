@@ -1,8 +1,8 @@
 """Network diagnostics panel widget."""
 from __future__ import annotations
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton,
+    QWidget, QVBoxLayout,
     QLabel, QTextEdit,
 )
 from src.core.network_diagnostics import DiagnosticsResult, run_diagnostics

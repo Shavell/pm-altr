@@ -1,9 +1,8 @@
 """Settings dialog — proxy (host, port, auth, no_proxy, system proxy), SSL, redirect defaults."""
 from __future__ import annotations
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox,
-    QLabel, QLineEdit, QCheckBox, QPushButton, QFormLayout,
+    QLineEdit, QCheckBox, QPushButton, QFormLayout,
 )
 from src.core.settings_store import save_settings
 

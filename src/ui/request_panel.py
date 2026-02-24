@@ -1,14 +1,13 @@
 """Request builder panel: URL, method, params, headers, body, auth, toggles."""
 from __future__ import annotations
-import json
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QComboBox, QPushButton, QCheckBox,
     QTabWidget, QTableWidget, QTableWidgetItem,
-    QHeaderView, QTextEdit, QSizePolicy, QStackedWidget,
-    QFormLayout, QGroupBox,
+    QHeaderView, QTextEdit, QStackedWidget,
+    QFormLayout,
 )
 from src.core.http_client import RequestConfig
 from src.core.curl_parser import CurlRequest

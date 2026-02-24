@@ -1,17 +1,16 @@
 """Response panel: metrics bar, prettified body, headers, raw."""
 from __future__ import annotations
 import json
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QTabWidget, QTextEdit, QTableWidget, QTableWidgetItem,
-    QHeaderView, QSplitter, QFrame,
+    QHeaderView, QFrame,
 )
 
 try:
     from pygments import highlight
-    from pygments.lexers import JsonLexer, TextLexer
+    from pygments.lexers import JsonLexer
     from pygments.formatters import HtmlFormatter
     _HAS_PYGMENTS = True
 except ImportError:
@@ -24,9 +23,9 @@ def _size_human(b: int) -> str:
     if b < 1024:
         return f"{b} B"
     elif b < 1024 * 1024:
-        return f"{b/1024:.1f} KB"
+        return f"{b / 1024:.1f} KB"
     else:
-        return f"{b/1024/1024:.1f} MB"
+        return f"{b / 1024 / 1024:.1f} MB"
 
 
 _STATUS_COLORS = {
