@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies (Qt)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libxkbcommon0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Lint with flake8
+        run: |
+          flake8 src/ main.py --max-line-length=120 --ignore=E501,W503
+
+      - name: Verify imports
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          python -c "
+          from src.core.http_client import HttpClient, RequestConfig
+          from src.core.curl_parser import parse_curl, export_curl
+          from src.core.history_manager import HistoryManager
+          from src.core.network_diagnostics import run_diagnostics
+          from src.core.settings_store import load_settings, save_settings
+          print('Core modules OK')
+          "
+
+      - name: Verify UI modules
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          python -c "
+          import sys
+          from PyQt6.QtWidgets import QApplication
+          app = QApplication(sys.argv)
+          from src.ui.main_window import MainWindow
+          w = MainWindow()
+          print(f'MainWindow OK — {w.tabs.count()} tabs')
+          "
+
+      - name: Test cURL parser
+        run: |
+          python -c "
+          from src.core.curl_parser import parse_curl, export_curl
+          r = parse_curl(\"curl -X POST -H 'Content-Type: application/json' -d '{\\\"a\\\": 1}' https://example.com/api\")
+          assert r.method == 'POST'
+          assert r.url == 'https://example.com/api'
+          r2 = parse_curl('curl https://example.com?foo=bar')
+          assert r2.params.get('foo') == 'bar'
+          print('cURL parser tests passed')
+          "

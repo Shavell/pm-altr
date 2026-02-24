@@ -32,7 +32,7 @@ A feature-rich, open-source **Postman alternative** built entirely in Python + P
 
 ### 1. Clone / Download
 ```bash
-git clone https://github.com/your-username/pm-altr.git
+git clone https://github.com/Shavell/pm-altr.git
 cd pm-altr
 ```
 
@@ -203,6 +203,26 @@ dist\pm-altr.exe
 ```
 
 > **Note:** The `pm-altr.spec` file is pre-configured with `console=False` (no terminal window) and `upx=True` (compression enabled). The `dist/` and `build/` directories are excluded via `.gitignore`.
+
+---
+
+## CI/CD
+
+Two GitHub Actions workflows are included:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| **CI** (`ci.yml`) | Push/PR to `main` | Lint (flake8), verify imports, test cURL parser — on Python 3.11/3.12/3.13 |
+| **Release** (`release.yml`) | Push a tag `v*` | Build binaries for macOS + Windows + Linux, create GitHub Release with artifacts |
+
+### Creating a release
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This automatically builds all three platforms and publishes the binaries as a GitHub Release.
 
 ---
 
