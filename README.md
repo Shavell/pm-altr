@@ -24,6 +24,8 @@ A feature-rich, open-source **Postman alternative** built entirely in Python + P
 | **Response metrics** | Status code · response time (ms) · response size |
 | **Raw view** | Full HTTP response headers + body as plain text |
 | **Request history** | SQLite-backed; dockable sidebar; search; double-click to restore |
+| **Collections** | Organize requests into collections; create/rename/delete; import/export JSON |
+| **OpenAPI import** | Import OpenAPI 3.x specs (JSON/YAML) as collections with pre-filled requests |
 | **Network diagnostics** | DNS resolution · TCP connect time · ping RTT · packet loss |
 
 ---
@@ -111,6 +113,20 @@ The left **History** dock shows all past requests. Double-click any entry to res
 
 Toggle visibility with **View → Toggle History** (`Ctrl+H`).
 
+### Collections & OpenAPI
+
+The **Collections** dock (tabbed alongside History on the left) lets you organize requests into named groups.
+
+- **New collection:** Click `+ New` and enter a name.
+- **Save a request to a collection:** Click the `💾 Save to Collection` button in any request tab, choose a collection, and give it a name.
+- **Load a request:** Double-click any request in the collection tree to open it in a new tab.
+- **Import a JSON collection:** Click `📥 Import → Import JSON Collection…` and pick a `.json` file.
+- **Import an OpenAPI spec:** Click `📥 Import → Import OpenAPI Spec…` and pick a `.json` or `.yaml` file. Each path+method becomes a request with pre-filled headers, query params, body, and auth.
+- **Export a collection:** Select a collection and click `📤 Export` to save it as JSON.
+- **Right-click context menu:** Rename or delete collections; delete individual requests.
+
+Toggle visibility with **View → Toggle Collections** (`Ctrl+L`).
+
 ### Network Diagnostics
 Every tab has a **Network Diagnostics** panel on the right side of the request area.
 Click **▶ Run Diagnostics** after setting a URL (or after sending a request) to see:
@@ -134,6 +150,7 @@ pm-altr/
     │   ├── http_client.py         # HTTP execution, metrics, proxy, auth
     │   ├── curl_parser.py         # cURL ↔ request model conversion
     │   ├── history_manager.py     # SQLite history (stored in ~/.pm-altr/)
+    │   ├── collection_manager.py  # Collections + OpenAPI import (SQLite)
     │   └── network_diagnostics.py # DNS/TCP/ping diagnostics
     └── ui/
         ├── main_window.py         # QMainWindow, tab management, menus
@@ -141,6 +158,7 @@ pm-altr/
         ├── response_panel.py      # Metrics, prettified body, headers, raw
         ├── network_debug_panel.py # Diagnostics runner
         ├── history_panel.py       # Dockable history list
+        ├── collection_panel.py    # Collection browser tree
         └── settings_dialog.py     # Proxy + default settings
 ```
 
@@ -155,6 +173,7 @@ pm-altr/
 | `pygments` | Syntax highlighting for JSON responses |
 | `ping3` | ICMP ping for network diagnostics |
 | `dnspython` | Advanced DNS utilities |
+| `pyyaml` | YAML OpenAPI spec parsing |
 
 Install all with:
 ```bash
@@ -231,7 +250,7 @@ This automatically builds all three platforms and publishes the binaries as a Gi
 History and settings are persisted at:
 ```
 ~/.pm-altr/
-├── history.db       # Request/response history (SQLite)
+├── history.db       # Request/response history + collections (SQLite)
 ├── settings.json    # Proxy, SSL, redirect preferences
 └── tabs.json        # Last open tabs (restored on startup)
 ```

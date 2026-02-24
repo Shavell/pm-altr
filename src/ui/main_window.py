@@ -7,17 +7,19 @@ from PyQt6.QtGui import QAction, QCloseEvent
 from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QWidget, QSplitter,
     QVBoxLayout, QDockWidget, QInputDialog,
-    QMessageBox, QApplication,
+    QMessageBox, QApplication, QMenu,
 )
 
 from src.core.http_client import HttpClient, RequestConfig, ResponseData
 from src.core.curl_parser import parse_curl, export_curl, CurlRequest
 from src.core.history_manager import HistoryManager, HistoryEntry
+from src.core.collection_manager import CollectionManager, CollectionRequest
 from src.core.settings_store import load_settings
 from src.ui.request_panel import RequestPanel
 from src.ui.response_panel import ResponsePanel
 from src.ui.network_debug_panel import NetworkDebugPanel
 from src.ui.history_panel import HistoryPanel
+from src.ui.collection_panel import CollectionPanel
 from src.ui.settings_dialog import SettingsDialog
 
 _TABS_PATH = Path.home() / ".pm-altr" / "tabs.json"
@@ -39,10 +41,11 @@ class _SendWorker(QThread):
 class RequestTab(QWidget):
     """A single request/response tab."""
 
-    history_saved = pyqtSignal()              # emitted after each successful request save
-    proxy_settings_requested = pyqtSignal()   # bubble up to MainWindow
-    import_curl_requested = pyqtSignal()      # bubble up to MainWindow
-    export_curl_requested = pyqtSignal()      # bubble up to MainWindow
+    history_saved = pyqtSignal()
+    proxy_settings_requested = pyqtSignal()
+    import_curl_requested = pyqtSignal()
+    export_curl_requested = pyqtSignal()
+    save_to_collection_requested = pyqtSignal()
 
     def __init__(self, settings: dict, history_mgr: HistoryManager, parent=None):
         super().__init__(parent)
@@ -71,6 +74,9 @@ class RequestTab(QWidget):
         self.request_panel.proxy_settings_requested.connect(self.proxy_settings_requested.emit)
         self.request_panel.import_curl_requested.connect(self.import_curl_requested.emit)
         self.request_panel.export_curl_requested.connect(self.export_curl_requested.emit)
+        self.request_panel.save_to_collection_requested.connect(
+            self.save_to_collection_requested.emit
+        )
         left_layout.addWidget(self.request_panel)
 
         top_splitter.addWidget(left)
@@ -148,6 +154,7 @@ class MainWindow(QMainWindow):
         self.resize(1280, 800)
         self._settings: dict = load_settings()
         self._history_mgr = HistoryManager()
+        self._collection_mgr = CollectionManager()
         self._adding_tab = False
         self._build_ui()
         self._build_menu()
@@ -169,6 +176,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(QWidget(), "+")
         # Disable close button on the "+" tab
         self.tabs.tabBar().setTabButton(0, self.tabs.tabBar().ButtonPosition.RightSide, None)
+        self.tabs.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tabs.tabBar().customContextMenuRequested.connect(self._tab_context_menu)
 
         layout.addWidget(self.tabs)
 
@@ -184,6 +193,20 @@ class MainWindow(QMainWindow):
         )
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, history_dock)
         self._history_dock = history_dock
+
+        # Collection dock
+        self._collection_panel = CollectionPanel(self._collection_mgr)
+        self._collection_panel.request_selected.connect(self._load_collection_request)
+        collection_dock = QDockWidget("Collections", self)
+        collection_dock.setWidget(self._collection_panel)
+        collection_dock.setMinimumWidth(280)
+        collection_dock.setFeatures(
+            QDockWidget.DockWidgetFeature.DockWidgetMovable
+            | QDockWidget.DockWidgetFeature.DockWidgetFloatable
+        )
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, collection_dock)
+        self._collection_dock = collection_dock
+        self.tabifyDockWidget(history_dock, collection_dock)
 
     def _build_menu(self):
         mb = self.menuBar()
@@ -218,6 +241,11 @@ class MainWindow(QMainWindow):
         toggle_history.triggered.connect(lambda: self._history_dock.setVisible(
             not self._history_dock.isVisible()))
         view_menu.addAction(toggle_history)
+        toggle_collections = QAction("Toggle Collections", self)
+        toggle_collections.setShortcut("Ctrl+L")
+        toggle_collections.triggered.connect(lambda: self._collection_dock.setVisible(
+            not self._collection_dock.isVisible()))
+        view_menu.addAction(toggle_collections)
 
     def _on_current_changed(self, index: int):
         if index == 0 and not self._adding_tab and hasattr(self, '_history_panel'):
@@ -231,6 +259,7 @@ class MainWindow(QMainWindow):
         tab.proxy_settings_requested.connect(self._open_settings)
         tab.import_curl_requested.connect(self._import_curl)
         tab.export_curl_requested.connect(self._export_curl)
+        tab.save_to_collection_requested.connect(self._save_to_collection)
         idx = self.tabs.addTab(tab, title)
         self.tabs.setCurrentIndex(idx)
         return tab
@@ -243,6 +272,30 @@ class MainWindow(QMainWindow):
         # If no real tabs left, open a fresh one
         if self.tabs.count() <= 1:
             self._new_tab()
+
+    def _tab_context_menu(self, pos):
+        index = self.tabs.tabBar().tabAt(pos)
+        if index <= 0:
+            return
+        menu = QMenu(self)
+        menu.addAction("Close", lambda: self._close_tab(index))
+        menu.addAction("Close Others", lambda: self._close_other_tabs(index))
+        menu.addAction("Close All", self._close_all_tabs)
+        menu.exec(self.tabs.tabBar().mapToGlobal(pos))
+
+    def _close_other_tabs(self, keep_index: int):
+        i = self.tabs.count() - 1
+        while i > 0:
+            if i != keep_index:
+                self.tabs.removeTab(i)
+                if keep_index > i:
+                    keep_index -= 1
+            i -= 1
+
+    def _close_all_tabs(self):
+        while self.tabs.count() > 1:
+            self.tabs.removeTab(self.tabs.count() - 1)
+        self._new_tab()
 
     def _current_tab(self) -> RequestTab | None:
         w = self.tabs.currentWidget()
@@ -323,6 +376,29 @@ class MainWindow(QMainWindow):
                 pass
         # Fallback: open a blank tab
         self._new_tab()
+
+    # --- Collection helpers ---
+
+    def _save_to_collection(self):
+        tab = self.tabs.currentWidget()
+        if isinstance(tab, RequestTab):
+            state = tab.request_panel.get_tab_state()
+            self._collection_panel.save_current_request(state)
+
+    def _load_collection_request(self, req: CollectionRequest):
+        tab = self._new_tab(req.name or req.url[:30])
+        state = {
+            "method": req.method,
+            "url": req.url,
+            "headers": json.loads(req.headers) if req.headers else {},
+            "params": json.loads(req.params) if req.params else {},
+            "body_type": req.body_type or "none",
+            "body_text": req.body or "",
+            "auth_type": req.auth_type or "none",
+            "auth_username": req.auth_username or "",
+            "auth_token": req.auth_token or "",
+        }
+        tab.request_panel.load_tab_state(state)
 
     def closeEvent(self, event: QCloseEvent):
         self._save_tabs()

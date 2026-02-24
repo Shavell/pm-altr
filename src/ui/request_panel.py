@@ -77,9 +77,10 @@ class _KeyValueTable(QWidget):
 
 
 class RequestPanel(QWidget):
-    proxy_settings_requested = pyqtSignal()   # open proxy dialog
-    import_curl_requested = pyqtSignal()       # import curl
-    export_curl_requested = pyqtSignal()       # export curl
+    proxy_settings_requested = pyqtSignal()
+    import_curl_requested = pyqtSignal()
+    export_curl_requested = pyqtSignal()
+    save_to_collection_requested = pyqtSignal()
 
     def __init__(self, settings: dict, parent=None):
         super().__init__(parent)
@@ -126,8 +127,11 @@ class RequestPanel(QWidget):
         import_btn.clicked.connect(self.import_curl_requested.emit)
         export_btn = QPushButton("📤 Export cURL")
         export_btn.clicked.connect(self.export_curl_requested.emit)
+        save_col_btn = QPushButton("💾 Save to Collection")
+        save_col_btn.clicked.connect(self.save_to_collection_requested.emit)
         toggle_row.addWidget(import_btn)
         toggle_row.addWidget(export_btn)
+        toggle_row.addWidget(save_col_btn)
         layout.addLayout(toggle_row)
 
         # Sub-tabs: Params / Headers / Body / Auth

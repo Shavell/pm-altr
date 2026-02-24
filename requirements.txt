@@ -3,3 +3,4 @@ requests>=2.31.0
 pygments>=2.17.0
 ping3>=4.0.4
 dnspython>=2.4.0
+pyyaml>=6.0
