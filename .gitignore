@@ -10,7 +10,7 @@ dist/
 build/
 
 # PyInstaller
-*.spec
+# *.spec
 
 # IDE
 .idea/
