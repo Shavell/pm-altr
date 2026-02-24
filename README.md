@@ -163,11 +163,57 @@ pip install -r requirements.txt
 
 ---
 
+## Building a Single Binary
+
+You can package PM-ALTR into a standalone executable using [PyInstaller](https://pyinstaller.org/).
+
+### 1. Install PyInstaller
+```bash
+source venv/bin/activate
+pip install pyinstaller
+```
+
+### 2. Build
+```bash
+# macOS
+pyinstaller pm-altr.spec --clean --noconfirm
+
+# Windows
+pyinstaller pm-altr-win.spec --clean --noconfirm
+```
+
+### 3. Output
+
+| Platform | Output | Description |
+|---|---|---|
+| macOS | `dist/pm-altr` | Single executable binary |
+| macOS | `dist/PM-ALTR.app` | macOS app bundle (Finder) |
+| Windows | `dist/pm-altr.exe` | Single executable (.exe) |
+
+### 4. Run
+```bash
+# macOS — standalone binary
+./dist/pm-altr
+
+# macOS — app bundle
+open dist/PM-ALTR.app
+
+# Windows
+dist\pm-altr.exe
+```
+
+> **Note:** The `pm-altr.spec` file is pre-configured with `console=False` (no terminal window) and `upx=True` (compression enabled). The `dist/` and `build/` directories are excluded via `.gitignore`.
+
+---
+
 ## Data Storage
 
-History is persisted in a SQLite database at:
+History and settings are persisted at:
 ```
-~/.pm-altr/history.db
+~/.pm-altr/
+├── history.db       # Request/response history (SQLite)
+├── settings.json    # Proxy, SSL, redirect preferences
+└── tabs.json        # Last open tabs (restored on startup)
 ```
 
 ---
